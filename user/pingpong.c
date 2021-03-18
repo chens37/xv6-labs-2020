@@ -19,7 +19,7 @@ int main(int argc,char *argv[])
 
         read(ftoc[0],&cbyte,1);
 
-        printf("<%d>:received ping\n",getpid());
+        printf("%d: received ping\n",getpid());
         write(ctof[1],&cbyte,1);
 
         close(ftoc[0]);
@@ -33,12 +33,12 @@ int main(int argc,char *argv[])
         write(ftoc[1],&fbyte,1);
         
         read(ctof[0],&cbyte,1);
-        printf("<%d>:received pong\n",getpid());
+        printf("%d: received pong\n",getpid());
 
         close(ftoc[1]);
         close(ctof[0]);
     }
 
-
+    wait(0);
     exit(0);
 }
