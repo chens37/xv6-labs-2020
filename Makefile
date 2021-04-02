@@ -149,6 +149,8 @@ UPROGS=\
 	$U/_grind\
 	$U/_wc\
 	$U/_zombie\
+	$U/_trace\
+
 
 
 
@@ -295,6 +297,7 @@ myapi.key:
 		echo An API key should be 32 characters long.; \
 		false; \
 	fi;
-
+gdb:
+	riscv64-unknown-elf-gdb kernel/kernel
 
 .PHONY: handin tarball tarball-pref clean grade handin-check
