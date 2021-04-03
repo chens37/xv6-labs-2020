@@ -85,6 +85,22 @@ allocpid() {
   return pid;
 }
 
+int nproc(void) {
+    struct proc *p;
+    //struct proc *mp = myproc();
+    int ret = 0;
+    
+    //acquire(&mp->lock);
+    for(p = proc;p < &proc[NPROC];p++) {
+        if(p->state != UNUSED) {
+            ret+=1;        
+        }
+    }
+    //release(&mp->lock);
+
+    return ret;
+}
+
 // Look in the process table for an UNUSED proc.
 // If found, initialize state required to run in the kernel,
 // and return with p->lock held.
