@@ -23,7 +23,7 @@ kvminit()
 {
   kernel_pagetable = (pagetable_t) kalloc();
   memset(kernel_pagetable, 0, PGSIZE);
-
+  //vmprint(kernel_pagetable);
   // uart registers
   kvmmap(UART0, UART0, PGSIZE, PTE_R | PTE_W);
 
@@ -440,3 +440,43 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
     return -1;
   }
 }
+
+void vmprint(pagetable_t pagetable)
+{
+    uint64 pgnum;
+    pte_t *i,*j,*k;
+
+    if(!pagetable) {
+        panic("vmprint"); 
+        return;
+    }
+    pgnum = PGSIZE/sizeof(pte_t);
+
+    printf("page table %p\n",pagetable);
+    for(i = pagetable;i < (pagetable+pgnum);i++) {
+        if(*i&PTE_V) {
+            printf("..%d: pte %p pa %p\n",(i-pagetable),*i,PTE2PA(*i));
+            
+            pagetable_t pagetable2 = (pagetable_t)PTE2PA(*i);
+            for(j = pagetable2;j < (pagetable2+pgnum);j++) {
+                if(*j&PTE_V) {
+                    printf(".. ..%d: pte %p pa %p\n",(j-pagetable2),*j,PTE2PA(*j));
+                    
+                    pagetable_t pagetable3 = (pagetable_t)PTE2PA(*j);
+                    for(k = pagetable3;k < (pagetable3+pgnum);k++) {
+                        if(*k&PTE_V) {
+                            printf(".. .. ..%d: pte %p pa %p\n",(k-pagetable3),*k,PTE2PA(*k));
+                        }
+                    }
+                }
+
+            }
+        }
+
+    }
+}
+
+
+
+
+
