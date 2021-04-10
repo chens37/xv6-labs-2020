@@ -46,7 +46,38 @@ kvminit()
   // the highest virtual address in the kernel.
   kvmmap(TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);
 }
+pagetable_t ukvminit()
+{
+  pagetable_t pagetable;
+  
+  pagetable = (pagetable_t) kalloc();
+  memset(pagetable, 0, PGSIZE);
+  //vmprint(kernel_pagetable);
+  // uart registers
+  // uart registers
+  ukvmmap(UART0, UART0, PGSIZE, PTE_R | PTE_W,pagetable);
 
+  // virtio mmio disk interface
+  ukvmmap(VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W,pagetable);
+
+  // CLINT
+  ukvmmap(CLINT, CLINT, 0x10000, PTE_R | PTE_W,pagetable);
+
+  // PLIC
+  ukvmmap(PLIC, PLIC, 0x400000, PTE_R | PTE_W,pagetable);
+
+  // map kernel text executable and read-only.
+  ukvmmap(KERNBASE, KERNBASE, (uint64)etext-KERNBASE, PTE_R | PTE_X,pagetable);
+
+  // map kernel data and the physical RAM we'll make use of.
+  ukvmmap((uint64)etext, (uint64)etext, PHYSTOP-(uint64)etext, PTE_R | PTE_W,pagetable);
+
+  // map the trampoline for trap entry/exit to
+  // the highest virtual address in the kernel.
+  ukvmmap(TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X,pagetable);
+
+  return pagetable;
+}
 // Switch h/w page table register to the kernel's page table,
 // and enable paging.
 void
@@ -121,6 +152,11 @@ kvmmap(uint64 va, uint64 pa, uint64 sz, int perm)
     panic("kvmmap");
 }
 
+void ukvmmap(uint64 va, uint64 pa, uint64 sz, int perm,pagetable_t pg)
+{
+  if(mappages(pg,va,sz,pa,perm) != 0)
+    panic("ukvmmap");
+}
 // translate a kernel virtual address to
 // a physical address. only needed for
 // addresses on the stack.
@@ -153,9 +189,15 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
 
   a = PGROUNDDOWN(va);
   last = PGROUNDDOWN(va + size - 1);
+  if(pagetable == (pagetable_t)0x8012f000)
+    printf("break\n");
+
   for(;;){
-    if((pte = walk(pagetable, a, 1)) == 0)
+    if((pte = walk(pagetable, a, 1)) == 0) {
+      printf("va:%p, a:%p, pa:%p\n",va,a,pa);
+      vmprint(pagetable);
       return -1;
+    }
     if(*pte & PTE_V)
       panic("remap");
     *pte = PA2PTE(pa) | perm | PTE_V;

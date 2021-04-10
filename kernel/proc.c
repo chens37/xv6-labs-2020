@@ -25,8 +25,8 @@ extern char trampoline[]; // trampoline.S
 void
 procinit(void)
 {
+ #if 1 
   struct proc *p;
-  
   initlock(&pid_lock, "nextpid");
   for(p = proc; p < &proc[NPROC]; p++) {
       initlock(&p->lock, "proc");
@@ -42,6 +42,7 @@ procinit(void)
       p->kstack = va;
   }
   kvminithart();
+  #endif
 }
 
 // Must be called with interrupts disabled,
@@ -112,6 +113,17 @@ found:
     release(&p->lock);
     return 0;
   }
+  
+  //An enpty kernel page table.
+  p->kerneltable = ukvminit();
+
+  initlock(&pid_lock,"proc");
+  char *pa = (char *)kvmpa(p->kstack);
+  if(pa == 0)
+    panic("kalloc");
+  uint64 va = KSTACK((int)(p-proc));
+  ukvmmap(va,(uint64)pa,PGSIZE,PTE_R|PTE_W,p->kerneltable);
+  p->kstack = va;
 
   // An empty user page table.
   p->pagetable = proc_pagetable(p);
@@ -141,7 +153,10 @@ freeproc(struct proc *p)
   p->trapframe = 0;
   if(p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
+  if(p->kerneltable)
+    proc_freekerneltable(p->kerneltable);
   p->pagetable = 0;
+  p->kerneltable = 0;
   p->sz = 0;
   p->pid = 0;
   p->parent = 0;
@@ -183,6 +198,34 @@ proc_pagetable(struct proc *p)
   }
 
   return pagetable;
+}
+void 
+proc_freekerneltable(pagetable_t pagetable)
+{
+    uint64 pgnum;
+    pte_t *i,*j;
+
+    if(!pagetable) {
+        panic("vmprint"); 
+        return;
+    }
+    pgnum = PGSIZE/sizeof(pte_t);
+
+    for(i = pagetable;i < (pagetable+pgnum);i++) {
+        if(*i&PTE_V) {
+            pagetable_t pagetable2 = (pagetable_t)PTE2PA(*i);
+            for(j = pagetable2;j < (pagetable2+pgnum);j++) {
+                if(*j&PTE_V) {
+                    kfree((void *)PTE2PA(*j));    
+                }
+
+            }
+            kfree((void *)PTE2PA(*i));
+        }
+
+    }
+    kfree(pagetable);
+
 }
 
 // Free a process's page table, and free the
@@ -473,8 +516,10 @@ scheduler(void)
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
-        swtch(&c->context, &p->context);
+        w_satp(MAKE_SATP(p->kerneltable));
+        sfence_vma();
 
+        swtch(&c->context, &p->context);
         // Process is done running for now.
         // It should have changed its p->state before coming back.
         c->proc = 0;
@@ -485,6 +530,7 @@ scheduler(void)
     }
 #if !defined (LAB_FS)
     if(found == 0) {
+      kvminithart(); 
       intr_on();
       asm volatile("wfi");
     }

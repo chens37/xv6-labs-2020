@@ -108,6 +108,7 @@ void            yield(void);
 int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);
+void            proc_freekerneltable(pagetable_t pagetable);
 
 // swtch.S
 void            swtch(struct context*, struct context*);
@@ -168,6 +169,9 @@ void            uvminit(pagetable_t, uchar *, uint);
 uint64          uvmalloc(pagetable_t, uint64, uint64);
 uint64          uvmdealloc(pagetable_t, uint64, uint64);
 void            vmprint(pagetable_t pagetable);
+pagetable_t     ukvminit(void);
+void            ukvmmap(uint64 va, uint64 pa, uint64 sz, int perm,pagetable_t pg);
+
 #ifdef SOL_COW
 #else
 int             uvmcopy(pagetable_t, pagetable_t, uint64);
