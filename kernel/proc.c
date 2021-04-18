@@ -263,6 +263,8 @@ userinit(void)
   // and data into it.
   uvminit(p->pagetable, initcode, sizeof(initcode));
   p->sz = PGSIZE;
+ 
+  ukvmmap(0,vmpa(0,p->pagetable),PGSIZE,PTE_R|PTE_W,p->kerneltable);
 
   // prepare for the very first "return" from kernel to user.
   p->trapframe->epc = 0;      // user program counter
@@ -292,7 +294,13 @@ growproc(int n)
   } else if(n < 0){
     sz = uvmdealloc(p->pagetable, sz, sz + n);
   }
+
+  ucopypage(p->pagetable,p->kerneltable,sz,p->sz);
   p->sz = sz;
+
+  //for(int i = 0;i < sz;i+=PGSIZE)
+  //  printf("user:%p -> kernel:%p\n",vmpa(i,p->pagetable),vmpa(i,p->kerneltable));
+
   return 0;
 }
 
@@ -311,7 +319,14 @@ fork(void)
   }
 
   // Copy user memory from parent to child.
-  if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
+  if((uvmcopy(p->pagetable, np->pagetable, p->sz) < 0)){
+    freeproc(np);
+    release(&np->lock);
+    return -1;
+  }
+
+  if(ucopypage(np->pagetable,np->kerneltable,p->sz,0) < 0)
+  {
     freeproc(np);
     release(&np->lock);
     return -1;
@@ -708,7 +723,7 @@ either_copyin(void *dst, int user_src, uint64 src, uint64 len)
 {
   struct proc *p = myproc();
   if(user_src){
-    return copyin(p->pagetable, dst, src, len);
+    return copyin_new(p->pagetable, dst, src, len);
   } else {
     memmove(dst, (char*)src, len);
     return 0;

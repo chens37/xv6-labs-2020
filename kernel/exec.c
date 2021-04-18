@@ -116,6 +116,9 @@ exec(char *path, char **argv)
   p->trapframe->sp = sp; // initial stack pointer
   proc_freepagetable(oldpagetable, oldsz);
 
+  if(ucopypage(p->pagetable,p->kerneltable,p->sz,0) < 0)
+    panic("exec pagetable fault");
+
   if(p->pid == 1)
     vmprint(p->pagetable);
 

@@ -177,6 +177,20 @@ kvmpa(uint64 va)
   return pa+off;
 }
 
+uint64 vmpa(uint64 va,pagetable_t pagetable)
+{
+  uint64 off = va % PGSIZE;
+  pte_t *pte;
+  uint64 pa;
+  
+  pte = walk(pagetable, va, 0);
+  if(pte == 0)
+    panic("vmpa");
+  if((*pte & PTE_V) == 0)
+    panic("vmpa");
+  pa = PTE2PA(*pte);
+  return pa+off;
+}
 // Create PTEs for virtual addresses starting at va that refer to
 // physical addresses starting at pa. va and size might not
 // be page-aligned. Returns 0 on success, -1 if walk() couldn't
@@ -189,8 +203,6 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
 
   a = PGROUNDDOWN(va);
   last = PGROUNDDOWN(va + size - 1);
-  if(pagetable == (pagetable_t)0x8012f000)
-    printf("break\n");
 
   for(;;){
     if((pte = walk(pagetable, a, 1)) == 0) {
@@ -375,6 +387,51 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
  err:
   uvmunmap(new, 0, i / PGSIZE, 1);
   return -1;
+}
+int
+ucopypage(pagetable_t userpage,pagetable_t kernelpage,uint64 sz,uint64 start)
+{
+  pte_t *pte;//,*pte1,*pte2;
+  uint64 pa, i;
+  uint64 old,new;
+
+  old = PGROUNDUP(start);
+  new = PGROUNDUP(sz);
+#if 1 
+  if(old > new) {
+    for(i = new;i < old; i += PGSIZE)
+    {
+      if((pte = walk(kernelpage,i,0)) != 0){
+        if(*pte & PTE_V)
+          uvmunmap(kernelpage, i, 1, 0);  
+         // printf("fuck\n");
+      }
+    }
+    return 0;
+  }
+#endif
+  for(i = old;i < new; i+=PGSIZE) {
+    if((pte = walk(userpage, i, 0)) == 0)
+      panic("uvmcopy: pte should exist");
+    if((*pte & PTE_V) == 0)
+      panic("uvmcopy: page not present");
+    pa = PTE2PA(*pte);
+
+    if((pte = walk(kernelpage,i,0)) != 0){
+      if(*pte & PTE_V)
+        uvmunmap(kernelpage, i, 1, 0);  
+    }
+    ukvmmap(i,pa,PGSIZE,PTE_R|PTE_W,kernelpage); 
+
+    //pte1 = walk(userpage,i,0);
+    //pte2 = walk(kernelpage,i,0);
+    //printf("i:%p kernel:%p,user:%p\n",i,PTE2PA(*pte1),PTE2PA(*pte2));
+  }
+
+  if(sz >= 0xc000000)
+    printf("error!!!!!!!\n");
+    
+  return 0;
 }
 
 // mark a PTE invalid for user access.

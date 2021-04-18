@@ -171,7 +171,8 @@ uint64          uvmdealloc(pagetable_t, uint64, uint64);
 void            vmprint(pagetable_t pagetable);
 pagetable_t     ukvminit(void);
 void            ukvmmap(uint64 va, uint64 pa, uint64 sz, int perm,pagetable_t pg);
-
+uint64          vmpa(uint64 va,pagetable_t pagetable);
+int             ucopypage(pagetable_t old,pagetable_t new,uint64 sz,uint64 start);
 #ifdef SOL_COW
 #else
 int             uvmcopy(pagetable_t, pagetable_t, uint64);
@@ -183,6 +184,8 @@ uint64          walkaddr(pagetable_t, uint64);
 int             copyout(pagetable_t, uint64, char *, uint64);
 int             copyin(pagetable_t, char *, uint64, uint64);
 int             copyinstr(pagetable_t, char *, uint64, uint64);
+int             copyin_new(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len);
+int             copyinstr_new(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max);
 
 // plic.c
 void            plicinit(void);
