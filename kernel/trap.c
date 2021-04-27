@@ -5,7 +5,6 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
-
 struct spinlock tickslock;
 uint ticks;
 
@@ -77,8 +76,18 @@ usertrap(void)
     exit(-1);
 
   // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2)
-    yield();
+  if(which_dev == 2) {
+    if((p->alarm->status == S_ENABLE) && (p->alarm->ticks != 0)) {
+      p->alarm->cnt +=1;
+      if((p->alarm->ticks == p->alarm->cnt) ) {
+        p->alarm->cnt = 0;
+        p->alarm->status = S_RUNNING;
+        memmove(&p->alarm->trapframe,p->trapframe,sizeof(struct trapframe));
+        p->trapframe->epc = p->alarm->handler;
+      }
+    }
+    //yield();
+  }
 
   usertrapret();
 }
