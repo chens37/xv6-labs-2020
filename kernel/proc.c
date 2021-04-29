@@ -644,7 +644,10 @@ either_copyout(int user_dst, uint64 dst, void *src, uint64 len)
 {
   struct proc *p = myproc();
   if(user_dst){
-    return copyout(p->pagetable, dst, src, len);
+    if((p->sz > (len+dst)) && (p->sz > dst))
+      return copyout(p->pagetable, dst, src, len);
+    else 
+      return -1;
   } else {
     memmove((char *)dst, src, len);
     return 0;
@@ -658,8 +661,12 @@ int
 either_copyin(void *dst, int user_src, uint64 src, uint64 len)
 {
   struct proc *p = myproc();
+
   if(user_src){
-    return copyin(p->pagetable, dst, src, len);
+    if((p->sz >= (src + len)) && (p->sz > src))
+      return copyin(p->pagetable, dst, src, len);
+    else
+      return -1;
   } else {
     memmove(dst, (char*)src, len);
     return 0;

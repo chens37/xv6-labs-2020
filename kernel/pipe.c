@@ -90,6 +90,8 @@ pipewrite(struct pipe *pi, uint64 addr, int n)
       wakeup(&pi->nread);
       sleep(&pi->nwrite, &pi->lock);
     }
+    if((addr >= pr->sz) || ((addr + i) >= pr->sz))
+      break;
     if(copyin(pr->pagetable, &ch, addr + i, 1) == -1)
       break;
     pi->data[pi->nwrite++ % PIPESIZE] = ch;
@@ -118,6 +120,8 @@ piperead(struct pipe *pi, uint64 addr, int n)
     if(pi->nread == pi->nwrite)
       break;
     ch = pi->data[pi->nread++ % PIPESIZE];
+    if((addr >= pr->sz) || ((addr+i) >= pr->sz))
+      break;
     if(copyout(pr->pagetable, addr + i, &ch, 1) == -1)
       break;
   }
