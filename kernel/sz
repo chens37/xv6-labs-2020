@@ -1,0 +1,343 @@
+syscall.c:15:  if(addr >= p->sz || addr+sizeof(uint64) > p->sz)
+syscall.c:17:  if(copyin(p->pagetable, (char *)ip, addr, sizeof(*ip)) != 0)
+syscall.c:28:  int err = copyinstr(p->pagetable, buf, addr, max);
+syscall.c:40:    return p->trapframe->a0;
+syscall.c:42:    return p->trapframe->a1;
+syscall.c:44:    return p->trapframe->a2;
+syscall.c:46:    return p->trapframe->a3;
+syscall.c:48:    return p->trapframe->a4;
+syscall.c:50:    return p->trapframe->a5;
+syscall.c:138:  num = p->trapframe->a7;
+syscall.c:140:    p->trapframe->a0 = syscalls[num]();
+syscall.c:143:            p->pid, p->name, num);
+syscall.c:144:    p->trapframe->a0 = -1;
+sysfile.c:47:    if(p->ofile[fd] == 0){
+sysfile.c:48:      p->ofile[fd] = f;
+sysfile.c:135:  if(ip->type == T_DIR){
+sysfile.c:141:  ip->nlink++;
+sysfile.c:148:  if(dp->dev != ip->dev || dirlink(dp, name, ip->inum) < 0){
+sysfile.c:161:  ip->nlink--;
+sysfile.c:175:  for(off=2*sizeof(de); off<dp->size; off+=sizeof(de)){
+sysfile.c:211:  if(ip->nlink < 1)
+sysfile.c:213:  if(ip->type == T_DIR && !isdirempty(ip)){
+sysfile.c:221:  if(ip->type == T_DIR){
+sysfile.c:222:    dp->nlink--;
+sysfile.c:227:  ip->nlink--;
+sysfile.c:255:    if(type == T_FILE && (ip->type == T_FILE || ip->type == T_DEVICE))
+sysfile.c:261:  if((ip = ialloc(dp->dev, type)) == 0)
+sysfile.c:265:  ip->major = major;
+sysfile.c:266:  ip->minor = minor;
+sysfile.c:267:  ip->nlink = 1;
+sysfile.c:271:    dp->nlink++;  // for ".."
+sysfile.c:273:    // No ip->nlink++ for ".": avoid cyclic ref count.
+sysfile.c:274:    if(dirlink(ip, ".", ip->inum) < 0 || dirlink(ip, "..", dp->inum) < 0)
+sysfile.c:278:  if(dirlink(dp, name, ip->inum) < 0)
+sysfile.c:312:    if(ip->type == T_DIR && omode != O_RDONLY){
+sysfile.c:319:  if(ip->type == T_DEVICE && (ip->major < 0 || ip->major >= NDEV)){
+sysfile.c:333:  if(ip->type == T_DEVICE){
+sysfile.c:335:    f->major = ip->major;
+sysfile.c:344:  if((omode & O_TRUNC) && ip->type == T_FILE){
+sysfile.c:403:  if(ip->type != T_DIR){
+sysfile.c:409:  iput(p->cwd);
+sysfile.c:411:  p->cwd = ip;
+sysfile.c:472:      p->ofile[fd0] = 0;
+sysfile.c:477:  if(copyout(p->pagetable, fdarray, (char*)&fd0, sizeof(fd0)) < 0 ||
+sysfile.c:478:     copyout(p->pagetable, fdarray+sizeof(fd0), (char *)&fd1, sizeof(fd1)) < 0){
+sysfile.c:479:    p->ofile[fd0] = 0;
+sysfile.c:480:    p->ofile[fd1] = 0;
+log.c:210://   modify bp->data[]
+trampoline.S:23:        # sscratch points to where the process's p->trapframe is
+trampoline.S:63:	# save the user a0 in p->trapframe->a0
+trampoline.S:67:        # restore kernel stack pointer from p->trapframe->kernel_sp
+trampoline.S:70:        # make tp hold the current hartid, from p->trapframe->kernel_hartid
+trampoline.S:73:        # load the address of usertrap(), p->trapframe->kernel_trap
+trampoline.S:76:        # restore kernel page table from p->trapframe->kernel_satp
+trampoline.S:82:        # table does not specially map p->tf.
+riscv.h:161:// Supervisor Trap-Vector Base Address
+fs.c:36:  memmove(sb, bp->data, sizeof(*sb));
+fs.c:56:  memset(bp->data, 0, BSIZE);
+fs.c:75:      if((bp->data[bi/8] & m) == 0){  // Is block free?
+fs.c:76:        bp->data[bi/8] |= m;  // Mark block in use.
+fs.c:98:  if((bp->data[bi/8] & m) == 0)
+fs.c:100:  bp->data[bi/8] &= ~m;
+fs.c:120:// not stored on disk: ip->ref and ip->valid.
+fs.c:131://   is free if ip->ref is zero. Otherwise ip->ref tracks
+fs.c:138://   cache entry is only correct when ip->valid is 1.
+fs.c:140://   the disk and sets ip->valid, while iput() clears
+fs.c:141://   ip->valid if ip->ref has fallen to zero.
+fs.c:150://   ... examine and modify ip->xxx ...
+fs.c:158:// pathname lookup. iget() increments ip->ref so that the inode
+fs.c:166:// entries. Since ip->ref indicates whether an entry is free,
+fs.c:167:// and ip->dev and ip->inum indicate which i-node an entry
+fs.c:170:// An ip->lock sleep-lock protects all ip-> fields other than ref,
+fs.c:171:// dev, and inum.  One must hold ip->lock in order to
+fs.c:172:// read or write that inode's ip->valid, ip->size, ip->type, &c.
+fs.c:204:    dip = (struct dinode*)bp->data + inum%IPB;
+fs.c:205:    if(dip->type == 0){  // a free inode
+fs.c:207:      dip->type = type;
+fs.c:218:// Must be called after every change to an ip->xxx field
+fs.c:220:// Caller must hold ip->lock.
+fs.c:227:  bp = bread(ip->dev, IBLOCK(ip->inum, sb));
+fs.c:228:  dip = (struct dinode*)bp->data + ip->inum%IPB;
+fs.c:229:  dip->type = ip->type;
+fs.c:230:  dip->major = ip->major;
+fs.c:231:  dip->minor = ip->minor;
+fs.c:232:  dip->nlink = ip->nlink;
+fs.c:233:  dip->size = ip->size;
+fs.c:234:  memmove(dip->addrs, ip->addrs, sizeof(ip->addrs));
+fs.c:252:    if(ip->ref > 0 && ip->dev == dev && ip->inum == inum){
+fs.c:253:      ip->ref++;
+fs.c:257:    if(empty == 0 && ip->ref == 0)    // Remember empty slot.
+fs.c:266:  ip->dev = dev;
+fs.c:267:  ip->inum = inum;
+fs.c:268:  ip->ref = 1;
+fs.c:269:  ip->valid = 0;
+fs.c:281:  ip->ref++;
+fs.c:294:  if(ip == 0 || ip->ref < 1)
+fs.c:297:  acquiresleep(&ip->lock);
+fs.c:299:  if(ip->valid == 0){
+fs.c:300:    bp = bread(ip->dev, IBLOCK(ip->inum, sb));
+fs.c:301:    dip = (struct dinode*)bp->data + ip->inum%IPB;
+fs.c:302:    ip->type = dip->type;
+fs.c:303:    ip->major = dip->major;
+fs.c:304:    ip->minor = dip->minor;
+fs.c:305:    ip->nlink = dip->nlink;
+fs.c:306:    ip->size = dip->size;
+fs.c:307:    memmove(ip->addrs, dip->addrs, sizeof(ip->addrs));
+fs.c:309:    ip->valid = 1;
+fs.c:310:    if(ip->type == 0)
+fs.c:319:  if(ip == 0 || !holdingsleep(&ip->lock) || ip->ref < 1)
+fs.c:322:  releasesleep(&ip->lock);
+fs.c:337:  if(ip->ref == 1 && ip->valid && ip->nlink == 0){
+fs.c:340:    // ip->ref == 1 means no other process can have ip locked,
+fs.c:342:    acquiresleep(&ip->lock);
+fs.c:347:    ip->type = 0;
+fs.c:349:    ip->valid = 0;
+fs.c:351:    releasesleep(&ip->lock);
+fs.c:356:  ip->ref--;
+fs.c:372:// are listed in ip->addrs[].  The next NINDIRECT blocks are
+fs.c:373:// listed in block ip->addrs[NDIRECT].
+fs.c:384:    if((addr = ip->addrs[bn]) == 0)
+fs.c:385:      ip->addrs[bn] = addr = balloc(ip->dev);
+fs.c:392:    if((addr = ip->addrs[NDIRECT]) == 0)
+fs.c:393:      ip->addrs[NDIRECT] = addr = balloc(ip->dev);
+fs.c:394:    bp = bread(ip->dev, addr);
+fs.c:395:    a = (uint*)bp->data;
+fs.c:397:      a[bn] = addr = balloc(ip->dev);
+fs.c:408:// Caller must hold ip->lock.
+fs.c:417:    if(ip->addrs[i]){
+fs.c:418:      bfree(ip->dev, ip->addrs[i]);
+fs.c:419:      ip->addrs[i] = 0;
+fs.c:423:  if(ip->addrs[NDIRECT]){
+fs.c:424:    bp = bread(ip->dev, ip->addrs[NDIRECT]);
+fs.c:425:    a = (uint*)bp->data;
+fs.c:428:        bfree(ip->dev, a[j]);
+fs.c:431:    bfree(ip->dev, ip->addrs[NDIRECT]);
+fs.c:432:    ip->addrs[NDIRECT] = 0;
+fs.c:435:  ip->size = 0;
+fs.c:440:// Caller must hold ip->lock.
+fs.c:444:  st->dev = ip->dev;
+fs.c:445:  st->ino = ip->inum;
+fs.c:446:  st->type = ip->type;
+fs.c:447:  st->nlink = ip->nlink;
+fs.c:448:  st->size = ip->size;
+fs.c:452:// Caller must hold ip->lock.
+fs.c:461:  if(off > ip->size || off + n < off)
+fs.c:463:  if(off + n > ip->size)
+fs.c:464:    n = ip->size - off;
+fs.c:467:    bp = bread(ip->dev, bmap(ip, off/BSIZE));
+fs.c:469:    if(either_copyout(user_dst, dst, bp->data + (off % BSIZE), m) == -1) {
+fs.c:479:// Caller must hold ip->lock.
+fs.c:488:  if(off > ip->size || off + n < off)
+fs.c:494:    bp = bread(ip->dev, bmap(ip, off/BSIZE));
+fs.c:496:    if(either_copyin(bp->data + (off % BSIZE), user_src, src, m) == -1) {
+fs.c:505:    if(off > ip->size)
+fs.c:506:      ip->size = off;
+fs.c:509:    // block to ip->addrs[].
+fs.c:532:  if(dp->type != T_DIR)
+fs.c:535:  for(off = 0; off < dp->size; off += sizeof(de)){
+fs.c:545:      return iget(dp->dev, inum);
+fs.c:567:  for(off = 0; off < dp->size; off += sizeof(de)){
+fs.c:637:    if(ip->type != T_DIR){
+vmcopyin.c:34:  if (srcva >= p->sz || srcva+len >= p->sz || srcva+len < srcva)
+vmcopyin.c:52:  for(int i = 0; i < max && srcva + i < p->sz; i++){
+uart.c:136:// called from both the top- and bottom-half.
+proc.h:89:  // p->lock must be held when using these:
+proc.h:97:  // these are private to the process, so p->lock need not be held.
+vm.c:43:  kvmmap((uint64)etext, (uint64)etext, PHYSTOP-(uint64)etext, PTE_R | PTE_W);
+vm.c:73:  ukvmmap((uint64)etext, (uint64)etext, PHYSTOP-(uint64)etext, PTE_R | PTE_W,pagetable);
+file.c:97:    if(copyout(p->pagetable, addr, (char *)&st, sizeof(st)) < 0)
+memlayout.h:65://   TRAPFRAME (p->trapframe, used by the trampoline)
+trap.c:51:  p->trapframe->epc = r_sepc();
+trap.c:56:    if(p->killed)
+trap.c:61:    p->trapframe->epc += 4;
+trap.c:71:    printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
+trap.c:73:    p->killed = 1;
+trap.c:76:  if(p->killed)
+trap.c:104:  p->trapframe->kernel_satp = r_satp();         // kernel page table
+trap.c:105:  p->trapframe->kernel_sp = p->kstack + PGSIZE; // process's kernel stack
+trap.c:106:  p->trapframe->kernel_trap = (uint64)usertrap;
+trap.c:107:  p->trapframe->kernel_hartid = r_tp();         // hartid for cpuid()
+trap.c:119:  w_sepc(p->trapframe->epc);
+trap.c:122:  uint64 satp = MAKE_SATP(p->pagetable);
+proc.c:32:      initlock(&p->lock, "proc");
+proc.c:42:      p->kstack = va;
+proc.c:91:// and return with p->lock held.
+proc.c:99:    acquire(&p->lock);
+proc.c:100:    if(p->state == UNUSED) {
+proc.c:103:      release(&p->lock);
+proc.c:109:  p->pid = allocpid();
+proc.c:112:  if((p->trapframe = (struct trapframe *)kalloc()) == 0){
+proc.c:113:    release(&p->lock);
+proc.c:118:  p->kerneltable = ukvminit();
+proc.c:121:  char *pa = (char *)kvmpa(p->kstack);
+proc.c:124:  uint64 va = KSTACK((int)(p-proc));
+proc.c:125:  ukvmmap(va,(uint64)pa,PGSIZE,PTE_R|PTE_W,p->kerneltable);
+proc.c:126:  p->kstack = va;
+proc.c:129:  p->pagetable = proc_pagetable(p);
+proc.c:130:  if(p->pagetable == 0){
+proc.c:132:    release(&p->lock);
+proc.c:138:  memset(&p->context, 0, sizeof(p->context));
+proc.c:139:  p->context.ra = (uint64)forkret;
+proc.c:140:  p->context.sp = p->kstack + PGSIZE;
+proc.c:147:// p->lock must be held.
+proc.c:151:  if(p->trapframe)
+proc.c:152:    kfree((void*)p->trapframe);
+proc.c:153:  p->trapframe = 0;
+proc.c:154:  if(p->pagetable)
+proc.c:155:    proc_freepagetable(p->pagetable, p->sz);
+proc.c:156:  if(p->kerneltable)
+proc.c:157:     kfree(p->kerneltable);   
+proc.c:158:  p->pagetable = 0;
+proc.c:159:  p->kerneltable = 0;
+proc.c:160:  p->sz = 0;
+proc.c:161:  p->pid = 0;
+proc.c:162:  p->parent = 0;
+proc.c:163:  p->name[0] = 0;
+proc.c:164:  p->chan = 0;
+proc.c:165:  p->killed = 0;
+proc.c:166:  p->xstate = 0;
+proc.c:167:  p->state = UNUSED;
+proc.c:194:              (uint64)(p->trapframe), PTE_R | PTE_W) < 0){
+proc.c:236:  uvminit(p->pagetable, initcode, sizeof(initcode));
+proc.c:237:  p->sz = PGSIZE;
+proc.c:240:  p->trapframe->epc = 0;      // user program counter
+proc.c:241:  p->trapframe->sp = PGSIZE;  // user stack pointer
+proc.c:243:  safestrcpy(p->name, "initcode", sizeof(p->name));
+proc.c:244:  p->cwd = namei("/");
+proc.c:246:  p->state = RUNNABLE;
+proc.c:248:  release(&p->lock);
+proc.c:259:  sz = p->sz;
+proc.c:261:    if((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0) {
+proc.c:265:    sz = uvmdealloc(p->pagetable, sz, sz + n);
+proc.c:267:  p->sz = sz;
+proc.c:286:  if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
+proc.c:288:    release(&np->lock);
+proc.c:291:  np->sz = p->sz;
+proc.c:293:  np->parent = p;
+proc.c:296:  *(np->trapframe) = *(p->trapframe);
+proc.c:299:  np->trapframe->a0 = 0;
+proc.c:303:    if(p->ofile[i])
+proc.c:304:      np->ofile[i] = filedup(p->ofile[i]);
+proc.c:305:  np->cwd = idup(p->cwd);
+proc.c:307:  safestrcpy(np->name, p->name, sizeof(p->name));
+proc.c:309:  pid = np->pid;
+proc.c:311:  np->state = RUNNABLE;
+proc.c:313:  release(&np->lock);
+proc.c:319:// Caller must hold p->lock.
+proc.c:326:    // this code uses pp->parent without holding pp->lock.
+proc.c:330:    if(pp->parent == p){
+proc.c:331:      // pp->parent can't change between the check and the acquire()
+proc.c:333:      acquire(&pp->lock);
+proc.c:334:      pp->parent = initproc;
+proc.c:339:      release(&pp->lock);
+proc.c:357:    if(p->ofile[fd]){
+proc.c:358:      struct file *f = p->ofile[fd];
+proc.c:360:      p->ofile[fd] = 0;
+proc.c:365:  iput(p->cwd);
+proc.c:367:  p->cwd = 0;
+proc.c:378:  // grab a copy of p->parent, to ensure that we unlock the same
+proc.c:384:  acquire(&p->lock);
+proc.c:385:  struct proc *original_parent = p->parent;
+proc.c:386:  release(&p->lock);
+proc.c:392:  acquire(&p->lock);
+proc.c:400:  p->xstate = status;
+proc.c:401:  p->state = ZOMBIE;
+proc.c:419:  // hold p->lock for the whole time to avoid lost
+proc.c:421:  acquire(&p->lock);
+proc.c:427:      // this code uses np->parent without holding np->lock.
+proc.c:429:      // since np might be an ancestor, and we already hold p->lock.
+proc.c:430:      if(np->parent == p){
+proc.c:431:        // np->parent can't change between the check and the acquire()
+proc.c:433:        acquire(&np->lock);
+proc.c:435:        if(np->state == ZOMBIE){
+proc.c:437:          pid = np->pid;
+proc.c:438:          if(addr != 0 && copyout(p->pagetable, addr, (char *)&np->xstate,
+proc.c:439:                                  sizeof(np->xstate)) < 0) {
+proc.c:440:            release(&np->lock);
+proc.c:441:            release(&p->lock);
+proc.c:445:          release(&np->lock);
+proc.c:446:          release(&p->lock);
+proc.c:449:        release(&np->lock);
+proc.c:454:    if(!havekids || p->killed){
+proc.c:455:      release(&p->lock);
+proc.c:460:    sleep(p, &p->lock);  //DOC: wait-sleep
+proc.c:484:      acquire(&p->lock);
+proc.c:485:      if(p->state == RUNNABLE) {
+proc.c:489:        p->state = RUNNING;
+proc.c:491:        w_satp(MAKE_SATP(p->kerneltable));
+proc.c:494:        swtch(&c->context, &p->context);
+proc.c:496:        // It should have changed its p->state before coming back.
+proc.c:501:      release(&p->lock);
+proc.c:515:// Switch to scheduler.  Must hold only p->lock
+proc.c:528:  if(!holding(&p->lock))
+proc.c:529:    panic("sched p->lock");
+proc.c:532:  if(p->state == RUNNING)
+proc.c:538:  swtch(&p->context, &mycpu()->context);
+proc.c:547:  acquire(&p->lock);
+proc.c:548:  p->state = RUNNABLE;
+proc.c:550:  release(&p->lock);
+proc.c:560:  // Still holding p->lock from scheduler.
+proc.c:581:  // Must acquire p->lock in order to
+proc.c:582:  // change p->state and then call sched.
+proc.c:583:  // Once we hold p->lock, we can be
+proc.c:585:  // (wakeup locks p->lock),
+proc.c:587:  if(lk != &p->lock){  //DOC: sleeplock0
+proc.c:588:    acquire(&p->lock);  //DOC: sleeplock1
+proc.c:593:  p->chan = chan;
+proc.c:594:  p->state = SLEEPING;
+proc.c:599:  p->chan = 0;
+proc.c:602:  if(lk != &p->lock){
+proc.c:603:    release(&p->lock);
+proc.c:609:// Must be called without any p->lock.
+proc.c:616:    acquire(&p->lock);
+proc.c:617:    if(p->state == SLEEPING && p->chan == chan) {
+proc.c:618:      p->state = RUNNABLE;
+proc.c:620:    release(&p->lock);
+proc.c:625:// Caller must hold p->lock.
+proc.c:629:  if(!holding(&p->lock))
+proc.c:631:  if(p->chan == p && p->state == SLEEPING) {
+proc.c:632:    p->state = RUNNABLE;
+proc.c:645:    acquire(&p->lock);
+proc.c:646:    if(p->pid == pid){
+proc.c:647:      p->killed = 1;
+proc.c:648:      if(p->state == SLEEPING){
+proc.c:650:        p->state = RUNNABLE;
+proc.c:652:      release(&p->lock);
+proc.c:655:    release(&p->lock);
+proc.c:668:    return copyout(p->pagetable, dst, src, len);
+proc.c:683:    return copyin(p->pagetable, dst, src, len);
+proc.c:708:    if(p->state == UNUSED)
+proc.c:710:    if(p->state >= 0 && p->state < NELEM(states) && states[p->state])
+proc.c:711:      state = states[p->state];
+proc.c:714:    printf("%d %s %s", p->pid, state, p->name);
+exec.c:65:  uint64 oldsz = p->sz;
+exec.c:103:  p->trapframe->a1 = sp;
+exec.c:109:  safestrcpy(p->name, last, sizeof(p->name));
+exec.c:112:  oldpagetable = p->pagetable;
+exec.c:113:  p->pagetable = pagetable;
+exec.c:114:  p->sz = sz;
+exec.c:115:  p->trapframe->epc = elf.entry;  // initial program counter = main
+exec.c:116:  p->trapframe->sp = sp; // initial stack pointer
+exec.c:119:  if(p->pid == 1)
+exec.c:120:    vmprint(p->pagetable);

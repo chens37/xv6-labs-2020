@@ -136,7 +136,7 @@ found:
 static void
 freeproc(struct proc *p)
 {
-  if(p->trapframe)
+  if(p->trapframe && !kmemderefs((uint64)p->trapframe))
     kfree((void*)p->trapframe);
   p->trapframe = 0;
   if(p->pagetable)

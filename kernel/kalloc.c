@@ -10,9 +10,12 @@
 #include "defs.h"
 
 void freerange(void *pa_start, void *pa_end);
+void kmemrefinit(void);
 
 extern char end[]; // first address after kernel.
                    // defined by kernel.ld.
+
+static uint8 refcnt[8*PGSIZE];
 
 struct run {
   struct run *next;
@@ -28,6 +31,7 @@ kinit()
 {
   initlock(&kmem.lock, "kmem");
   freerange(end, (void*)PHYSTOP);
+  kmemrefinit();
 }
 
 void
@@ -39,6 +43,38 @@ freerange(void *pa_start, void *pa_end)
     kfree(p);
 }
 
+void
+kmemrefinit(void)
+{
+    memset(refcnt,0,8*PGSIZE);
+}
+
+void 
+kmemrefs(uint64 addr)
+{
+  uint64 offset;
+
+  if(addr < 0x80000000)
+    return;
+  offset = (addr-0x80000000)/PGSIZE;
+  refcnt[offset] += 1;
+}
+
+uint64 
+kmemderefs(uint64 addr)
+{
+  uint64 offset;
+
+  if(addr < 0x80000000)
+    return 0;
+  offset = (addr-0x80000000)/PGSIZE;
+  refcnt[offset] -= 1;
+
+  if(refcnt[offset] > 0xf0)
+    printf("memory refs failed:%d offset:%x addr:%p\n",refcnt[offset],offset,addr);
+
+  return refcnt[offset];
+}
 // Free the page of physical memory pointed at by v,
 // which normally should have been returned by a
 // call to kalloc().  (The exception is when
@@ -76,7 +112,9 @@ kalloc(void)
     kmem.freelist = r->next;
   release(&kmem.lock);
 
-  if(r)
+  if(r){
     memset((char*)r, 5, PGSIZE); // fill with junk
+    kmemrefs((uint64)r);
+  }
   return (void*)r;
 }
